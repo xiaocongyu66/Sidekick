@@ -140,6 +140,11 @@ mod de {
         }
     }
 
+    /// 字段缺失当 Null（serde_json 的 Index 在缺键时 panic）。
+    fn field<'a>(data: &'a Value, key: &str) -> &'a Value {
+        data.get(key).unwrap_or(&Value::Null)
+    }
+
     /// 字符串或数组都收成 Vec<String>。
     fn strings(value: &Value) -> Vec<String> {
         match value {
@@ -194,7 +199,7 @@ mod de {
                 background: text(data.get("background").unwrap_or(&Value::Null)),
                 appearance: text(data.get("appearance").unwrap_or(&Value::Null)),
                 group_only_greetings: strings(data.get("group_only_greetings").unwrap_or(&Value::Null)),
-                book: data["character_book"].as_object().and_then(parse_book),
+                book: field(&data, "character_book").as_object().and_then(parse_book),
             }
         }
     }

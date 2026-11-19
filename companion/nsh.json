@@ -1,0 +1,7 @@
+{
+  "name": "暖灯",
+  "id": "com.yg.companion",
+  "appearance": "system",
+  "rust": ".",
+  "root": "App"
+}

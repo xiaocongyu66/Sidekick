@@ -1,0 +1,29 @@
+[package]
+name = "companion"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.97"
+
+[dependencies]
+nsh-core = { path = "../nsh-src/crates/nsh-core" }
+nsh-base = { path = "../nsh-src/crates/nsh-base" }
+harn-cli = { path = "../harn/crates/harn-cli" }
+harn-agent = { path = "../harn/crates/harn-agent" }
+harn-core = { path = "../harn/crates/harn-core" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
+anyhow = "1"
+
+# 桌面原生后端（cargo run 直跑；iOS/Android/Web 由 nsh CLI 打包）
+[target.'cfg(target_os = "linux")'.dependencies]
+nsh-platform-linux = { path = "../nsh-src/crates/nsh-platform-linux" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+nsh-platform-macos = { path = "../nsh-src/crates/nsh-platform-macos" }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+nsh-platform-windows = { path = "../nsh-src/crates/nsh-platform-windows" }
+
+# 无头 UI 冒烟（nsh-engine 跑真实 App，无平台窗口）
+[dev-dependencies]
+nsh-engine = { path = "../nsh-src/crates/nsh-engine" }
+nsh-testing = { path = "../nsh-src/crates/nsh-testing", features = ["live"] }

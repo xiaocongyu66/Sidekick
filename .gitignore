@@ -1,0 +1,13 @@
+target/
+Cargo.lock.bak
+*.log
+
+# nsh 前端框架源码（上游 https://github.com/longbridge/nsh，由脚本拉取）
+nsh-src/
+
+# harn 本地配置/本地目录
+.harn/
+
+# 系统与编辑器
+.DS_Store
+*.swp

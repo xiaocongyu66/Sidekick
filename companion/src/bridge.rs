@@ -30,7 +30,7 @@ pub(crate) fn start() {
     spawn(async move {
         eprintln!("[bridge] engine event loop ready");
         while let Some(event) = events_rx.recv().await {
-            eprintln!("[bridge] event → store: {event:?}");
+            eprintln!("[bridge] event → store: {}", event.label());
             store::apply(event);
         }
         eprintln!("[bridge] engine event loop ended");
@@ -102,7 +102,7 @@ async fn run_agent(
             }
             maybe_event = events_rx.recv() => {
                 let Some(event) = maybe_event else { break };
-                eprintln!("[harn] agent event: {event:?}");
+                eprintln!("[harn] agent event: {:?}", event);
                 if let Some(mapped) = map_event(&event) {
                     let _ = events.send(mapped);
                 }

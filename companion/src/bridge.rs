@@ -55,7 +55,7 @@ async fn run_agent(
     let Runtime {
         agent,
         abort,
-        events_rx,
+        mut events_rx,
         ..
     } = build_runtime(config).await?;
 

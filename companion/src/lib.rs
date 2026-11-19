@@ -47,7 +47,7 @@ fn composer() -> impl IntoElement {
         .gap_2()
         .child(
             input()
-                .value(move || store::draft_text())
+                .value(move || store::draft_text().as_str().to_owned())
                 .on_change(move |value: &str| store::set_draft(SharedString::from(value.to_owned())))
                 .on_submit(move |_: &str| store::submit())
                 .placeholder("和暖灯说说话…")

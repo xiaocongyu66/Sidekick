@@ -12,7 +12,7 @@ fn start() -> Headless {
 #[test]
 fn shows_welcome_and_sends_one_message() {
     let mut app = start();
-    app.wait_for("今天想聊点什么").unwrap();
+    app.wait_for("我在呢。今天想聊点什么？").unwrap();
     app.type_text("text:和暖灯说说话…", "我最近有点累").unwrap();
     app.press("role:button[发送]").unwrap();
     // 用户气泡入流（本地立即）。

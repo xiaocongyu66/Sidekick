@@ -62,7 +62,7 @@ fn composer() -> impl IntoElement {
         .child(
             button()
                 .disabled(move || store::is_busy() || store::draft_text().trim().is_empty())
-                .on_press(move || store::submit())
+                .on_press(store::submit)
                 .px_4()
                 .py_2()
                 .rounded(move || theme().radius)

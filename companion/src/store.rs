@@ -55,19 +55,6 @@ impl BridgeEvent {
         }
     }
 }
-    /// 后台就绪（provider/model）。
-    Started {
-        model: SharedString,
-    },
-    /// 流式增量：追加到当前助手气泡。
-    Delta(SharedString),
-    /// 状态行（权限/工具提示等）。
-    Info(SharedString),
-    /// 出错。
-    Error(SharedString),
-    /// 本回合结束。
-    Done,
-}
 
 #[derive(Clone)]
 struct ChatState {

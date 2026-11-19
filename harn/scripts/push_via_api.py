@@ -16,14 +16,19 @@ def gh(method, path, payload=None):
     cmd = ["gh", "api", "--method", method, path, "-H", "Accept: application/vnd.github+json"]
     if payload is not None:
         cmd += ["--input", "-"]
-    proc = subprocess.run(
-        cmd,
-        input=json.dumps(payload) if payload is not None else None,
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(f"{method} {path}: {proc.stderr[:300]}")
+    # api.github.com 偶发连接重置（EOF）：退避重试。
+    for attempt in range(6):
+        proc = subprocess.run(
+            cmd,
+            input=json.dumps(payload) if payload is not None else None,
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode == 0:
+            break
+        if attempt == 5:
+            raise RuntimeError(f"{method} {path}: {proc.stderr[:300]}")
+        time.sleep(1.5 * (attempt + 1))
     return json.loads(proc.stdout) if proc.stdout.strip() else {}
 
 def main():

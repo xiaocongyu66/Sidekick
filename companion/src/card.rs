@@ -22,6 +22,7 @@ const CARDA_V3_KEYWORD: &str = "ccv3";
 
 /// 一张解析后的角色卡（UI 与运行时使用）。
 #[derive(Debug, Clone, Default)]
+#[allow(dead_code)] // 卡面元数据：解析保留，UI 展示与卡片切换时再用。
 pub(crate) struct CharacterCard {
     pub(crate) spec: CardSpec,
     pub(crate) name: String,
@@ -61,6 +62,7 @@ pub(crate) enum CardSpec {
 #[derive(Debug, Clone, Default)]
 pub(crate) struct CharacterBook {
     /// 条目的「名字」（与角色卡名区分，仅标识用）。
+    #[allow(dead_code)]
     pub(crate) name: String,
     /// 触发扫描的最近消息深度（条数）。
     pub(crate) scan_depth: Option<u32>,
@@ -192,7 +194,7 @@ mod de {
                 background: text(&data["background"]),
                 appearance: text(&data["appearance"]),
                 group_only_greetings: strings(&data["group_only_greetings"]),
-                book: data["character_book"].as_object().map(parse_book).flatten(),
+                book: data["character_book"].as_object().and_then(parse_book),
             }
         }
     }
@@ -431,7 +433,7 @@ pub(crate) fn render_system(card: &CharacterCard, recent: &[String]) -> String {
     ] {
         if !value.trim().is_empty() {
             out.push_str(label);
-            out.push_str("：");
+            out.push('：');
             out.push_str(&macros(card, value.trim()));
             out.push('\n');
         }

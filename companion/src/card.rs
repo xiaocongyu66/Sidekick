@@ -266,6 +266,14 @@ fn parse_entry(value: &Value) -> Option<BookEntry> {
     })
 }
 
+fn text(value: &Value) -> String {
+    match value {
+        Value::String(s) => s.clone(),
+        Value::Null => String::new(),
+        _ => value.to_string(),
+    }
+}
+
 fn strings(value: &Value) -> Vec<String> {
     match value {
         Value::String(s) => vec![s.clone()],

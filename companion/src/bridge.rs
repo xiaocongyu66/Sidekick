@@ -21,7 +21,7 @@ pub(crate) fn start() {
     }
     global::<store::BridgeStarted>();
     let (commands_tx, commands_rx) = mpsc::unbounded_channel::<store::ChatCommand>();
-    let (events_tx, events_rx) = mpsc::unbounded_channel::<store::BridgeEvent>();
+    let (events_tx, mut events_rx) = mpsc::unbounded_channel::<store::BridgeEvent>();
     store::set_agent_channel(commands_tx);
 
     // 引擎线程：后台事件 → 信号。

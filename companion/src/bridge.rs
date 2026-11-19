@@ -11,6 +11,7 @@ use harn_core::event::AgentEvent;
 use nsh_core::prelude::*;
 use tokio::sync::mpsc;
 
+
 use crate::prompt::COMPANION_SYSTEM;
 use crate::store;
 
@@ -31,14 +32,24 @@ pub(crate) fn start() {
         }
     });
 
-    // tokio 线程：harn agent loop。
-    background(async move {
-        if let Err(error) = run_agent(commands_rx, events_tx.clone()).await {
-            let _ = events_tx.send(store::BridgeEvent::Error(
-                format!("后台启动失败：{error}").into(),
-            ));
-        }
-    });
+    // 专用线程 + 独立 tokio runtime：harn agent loop（nsh 引擎线程无 tokio 上下文）。
+    std::thread::Builder::new()
+        .name("harn-agent".into())
+        .spawn(move || {
+            let runtime = tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(2)
+                .enable_all()
+                .build()
+                .expect("harn tokio runtime");
+            runtime.block_on(async move {
+                if let Err(error) = run_agent(commands_rx, events_tx.clone()).await {
+                    let _ = events_tx.send(store::BridgeEvent::Error(
+                        format!("后台启动失败：{error}").into(),
+                    ));
+                }
+            });
+        })
+        .expect("harn agent thread");
 }
 
 async fn run_agent(

@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: 系统依赖（nsh Linux 后端需 GTK4）
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libglib2.0-dev
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.100"

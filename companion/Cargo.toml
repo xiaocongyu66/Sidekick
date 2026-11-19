@@ -14,6 +14,9 @@ harn-core = { path = "../harn/crates/harn-core" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 anyhow = "1"
 env_logger = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
 
 # 桌面原生后端（cargo run 直跑；iOS/Android/Web 由 nsh CLI 打包）
 [target.'cfg(target_os = "linux")'.dependencies]

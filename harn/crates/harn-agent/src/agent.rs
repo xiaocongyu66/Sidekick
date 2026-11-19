@@ -216,6 +216,11 @@ impl Agent {
         self.config.model = model.into();
     }
 
+    /// 运行时替换系统提示（角色卡 / 世界书每轮注入用）。
+    pub fn set_system_prompt(&mut self, prompt: impl Into<String>) {
+        self.config.system_prompt = prompt.into();
+    }
+
     pub fn permission(&self) -> Arc<PermissionPolicy> {
         self.permission.clone()
     }

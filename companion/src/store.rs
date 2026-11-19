@@ -26,6 +26,8 @@ pub(crate) struct Message {
 /// UI → 后台 agent 的命令。
 pub(crate) enum ChatCommand {
     Send(SharedString),
+    /// 导入角色卡原始字节（PNG 或 JSON）。
+    LoadCard(Vec<u8>),
 }
 
 /// 后台 → UI 的事件。
@@ -38,6 +40,11 @@ pub(crate) enum BridgeEvent {
     Info(SharedString),
     Error(SharedString),
     Done,
+    /// 角色卡导入完成：清空旧对话，开场白入流。
+    CardLoaded {
+        name: SharedString,
+        first_mes: SharedString,
+    },
 }
 
 #[derive(Clone)]
@@ -45,6 +52,7 @@ struct ChatState {
     messages: Signal<Vec<Message>>,
     draft: Signal<SharedString>,
     busy: Signal<bool>,
+    character_name: Signal<Option<SharedString>>,
     to_agent: Option<tokio::sync::mpsc::UnboundedSender<ChatCommand>>,
 }
 
@@ -57,6 +65,7 @@ impl Default for ChatState {
             }]),
             draft: signal(SharedString::default()),
             busy: signal(false),
+            character_name: signal(None),
             to_agent: None,
         }
     }
@@ -76,6 +85,10 @@ fn draft() -> Signal<SharedString> {
 
 fn busy() -> Signal<bool> {
     state().with_untracked(|state| state.busy)
+}
+
+fn character_state() -> Signal<Option<SharedString>> {
+    state().with_untracked(|state| state.character_name)
 }
 
 /// 注入后台通道（bridge 在引擎线程建好后调用）。
@@ -113,6 +126,21 @@ pub(crate) fn set_draft(text: SharedString) {
 /// 绑定：是否正在等待回复。
 pub(crate) fn is_busy() -> bool {
     busy().get()
+}
+
+/// 绑定：当前角色名（未导入卡片为 None）。
+pub(crate) fn character_name() -> Option<SharedString> {
+    character_state().get()
+}
+
+/// 导入角色卡字节：发给后台解析并热重载。
+pub(crate) fn load_card(bytes: Vec<u8>) {
+    state().with_untracked(|state| {
+        if let Some(sender) = state.to_agent.clone().as_ref() {
+            let _ = sender.send(ChatCommand::LoadCard(bytes));
+        }
+    });
+    busy().set(true);
 }
 
 /// 提交草稿：本地先入流，再送后台。
@@ -170,6 +198,19 @@ pub(crate) fn apply(event: BridgeEvent) {
             }));
         }
         BridgeEvent::Done => {
+            busy().set(false);
+        }
+        BridgeEvent::CardLoaded { name, first_mes } => {
+            character_state().set(Some(name));
+            messages().update(|messages| {
+                messages.clear();
+                if !first_mes.as_str().trim().is_empty() {
+                    messages.push(Message {
+                        role: Role::Assistant,
+                        text: first_mes,
+                    });
+                }
+            });
             busy().set(false);
         }
     }

@@ -3,5 +3,8 @@
   "id": "com.yg.companion",
   "appearance": "system",
   "rust": ".",
-  "root": "App"
+  "root": "App",
+  "capabilities": {
+    "picker": true
+  }
 }

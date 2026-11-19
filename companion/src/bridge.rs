@@ -12,6 +12,7 @@ use nsh_core::prelude::*;
 use tokio::sync::mpsc;
 
 
+use crate::card::{self, CharacterCard};
 use crate::prompt::COMPANION_SYSTEM;
 use crate::store;
 
@@ -78,19 +79,46 @@ async fn run_agent(
     let _ = events.send(store::BridgeEvent::Started { model: model.into() });
 
     let mut agent = agent;
+    let mut card: Option<CharacterCard> = None;
     loop {
         tokio::select! {
             maybe_command = commands.recv() => {
-                let Some(store::ChatCommand::Send(text)) = maybe_command else { break };
-                abort.reset();
-                match agent.send(UserInput::text(String::from(text.as_str()))).await {
-                    Ok(_) => {
-                        let _ = events.send(store::BridgeEvent::Done);
+                let Some(command) = maybe_command else { break };
+                match command {
+                    store::ChatCommand::Send(text) => {
+                        abort.reset();
+                        if let Some(card) = card.as_ref() {
+                            agent.set_system_prompt(card::render_system(card, &recent_texts(&agent)));
+                        }
+                        match agent.send(UserInput::text(String::from(text.as_str()))).await {
+                            Ok(_) => {
+                                let _ = events.send(store::BridgeEvent::Done);
+                            }
+                            Err(error) => {
+                                let _ = events.send(store::BridgeEvent::Error(
+                                    error.to_string().into(),
+                                ));
+                            }
+                        }
                     }
-                    Err(error) => {
-                        let _ = events.send(store::BridgeEvent::Error(
-                            error.to_string().into(),
-                        ));
+                    store::ChatCommand::LoadCard(bytes) => {
+                        match card::parse_bytes(&bytes) {
+                            Ok(parsed) => {
+                                let name = parsed.name.clone();
+                                let first_mes = card::greeting(&parsed, 0).to_owned();
+                                agent.set_system_prompt(card::render_system(&parsed, &recent_texts(&agent)));
+                                card = Some(parsed);
+                                let _ = events.send(store::BridgeEvent::CardLoaded {
+                                    name: name.into(),
+                                    first_mes: first_mes.into(),
+                                });
+                            }
+                            Err(error) => {
+                                let _ = events.send(store::BridgeEvent::Error(
+                                    format!("角色卡解析失败：{error}").into(),
+                                ));
+                            }
+                        }
                     }
                 }
             }
@@ -103,6 +131,20 @@ async fn run_agent(
         }
     }
     Ok(())
+}
+
+/// agent 近期消息文本（决策卡命中扫描窗口）。
+fn recent_texts(agent: &harn_agent::Agent) -> Vec<String> {
+    agent
+        .messages()
+        .iter()
+        .rev()
+        .take(8)
+        .rev()
+        .filter_map(|message| {
+            message.content.iter().filter_map(|block| block.as_text().map(str::to_owned)).next()
+        })
+        .collect()
 }
 
 /// AgentEvent → UI 事件：陪伴场景只关心文本流、状态与错误。

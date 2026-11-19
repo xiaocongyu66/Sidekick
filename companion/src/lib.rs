@@ -1,6 +1,7 @@
 //! 暖灯：情感陪伴聊天 app（nsh 纯 Rust，后端为内嵌的 harn agent）。
 
 mod bridge;
+mod card;
 mod prompt;
 mod store;
 
@@ -31,6 +32,7 @@ fn chat() -> impl IntoElement {
         .flex_1()
         .p_4()
         .gap_3()
+        .child(header())
         .child(
             virtual_list(store::message_count, message_row)
                 .keys(store::message_ids)
@@ -71,6 +73,42 @@ fn composer() -> impl IntoElement {
                 .disabled_style(|s| s.opacity(0.4))
                 .child(text("发送").text_color(move || theme().primary_foreground)),
         )
+}
+
+/// 顶栏：当前角色与导入入口。
+fn header() -> impl IntoElement {
+    view()
+        .flex_row()
+        .items_center()
+        .justify_between()
+        .child(text(move || {
+            store::character_name()
+                .map(|name| name.as_str().to_owned())
+                .unwrap_or_else(|| "暖灯".into())
+        })
+        .text_color(move || theme().foreground))
+        .child(
+            button()
+                .on_press(import_card)
+                .px_3()
+                .py_1()
+                .rounded(move || theme().radius)
+                .bg(move || theme().muted)
+                .child(text("导入角色卡").text_color(move || theme().foreground)),
+        )
+}
+
+/// 选一个角色卡文件（PNG/JSON），交给后台解析热重载。
+fn import_card() {
+    spawn(async move {
+        use nsh_core::picker::{FileFilter, FilePickRequest};
+        let request = FilePickRequest::default()
+            .filter(FileFilter::new("角色卡", ["png", "json"]));
+        let picked = pick_files(request).await;
+        if let Some(file) = picked.first() {
+            store::load_card(file.data.bytes().to_vec());
+        }
+    });
 }
 
 /// 一条消息气泡：配色随角色（v1 左对齐，后续再做左右分边）。

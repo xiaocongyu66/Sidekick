@@ -105,7 +105,7 @@ async fn run_agent(
                         match card::parse_bytes(&bytes) {
                             Ok(parsed) => {
                                 let name = parsed.name.clone();
-                                let first_mes = card::greeting(&parsed, 0).to_owned();
+                                let first_mes = card::greeting_macros(&parsed, 0);
                                 agent.set_system_prompt(card::render_system(&parsed, &recent_texts(&agent)));
                                 card = Some(parsed);
                                 let _ = events.send(store::BridgeEvent::CardLoaded {

@@ -101,8 +101,9 @@ fn header() -> impl IntoElement {
 /// 选一个角色卡文件（PNG/JSON），交给后台解析热重载。
 fn import_card() {
     spawn(async move {
-        use nsh_core::picker::{FileFilter, FilePickRequest};
-        let request = FilePickRequest::default()
+        use nsh_core::file_dialog::FileFilter;
+        use nsh_core::picker::FilePickRequest;
+        let request = FilePickRequest::new(false, 1)
             .filter(FileFilter::new("角色卡", ["png", "json"]));
         let picked = pick_files(request).await;
         if let Some(file) = picked.first() {

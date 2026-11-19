@@ -17,5 +17,5 @@ fn shows_welcome_and_sends_one_message() {
     // 用户气泡入流（本地立即）。
     app.wait_for("我最近有点累").unwrap();
     // mock provider 回显最后一条用户输入。
-    app.wait_for("mock: 我最近有点累").unwrap();
+    app.wait_for("text:mock: 我最近有点累").unwrap();
 }

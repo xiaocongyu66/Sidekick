@@ -84,7 +84,7 @@ async fn run_agent(
                 let Some(store::ChatCommand::Send(text)) = maybe_command else { break };
                 abort.reset();
                 match agent.send(UserInput::text(String::from(text.as_str()))).await {
-                    Ok(outcome) => {
+                    Ok(_) => {
                         let _ = events.send(store::BridgeEvent::Done);
                     }
                     Err(error) => {

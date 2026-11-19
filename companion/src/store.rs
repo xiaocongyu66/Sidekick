@@ -40,18 +40,6 @@ pub(crate) enum BridgeEvent {
     Done,
 }
 
-impl BridgeEvent {
-    pub(crate) fn label(&self) -> String {
-        match self {
-            BridgeEvent::Started { model } => format!("started({})", model.as_str()),
-            BridgeEvent::Delta(delta) => format!("delta({})", delta.as_str()),
-            BridgeEvent::Info(text) => format!("info({})", text.as_str()),
-            BridgeEvent::Error(text) => format!("error({})", text.as_str()),
-            BridgeEvent::Done => "done".into(),
-        }
-    }
-}
-
 #[derive(Clone)]
 struct ChatState {
     messages: Signal<Vec<Message>>,

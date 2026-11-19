@@ -5,8 +5,7 @@ use nsh_engine::{EngineConfig, Root};
 use nsh_testing::Headless;
 
 fn start() -> Headless {
-    let app = Headless::start(EngineConfig::new(Root::of::<companion::App>())).unwrap();
-    app
+    Headless::start(EngineConfig::new(Root::of::<companion::App>())).unwrap()
 }
 
 #[test]

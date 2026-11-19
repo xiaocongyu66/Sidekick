@@ -129,7 +129,6 @@ pub(crate) fn is_busy() -> bool {
 
 /// 提交草稿：本地先入流，再送后台。
 pub(crate) fn submit() {
-    eprintln!("[store] submit");
     let text = draft().get_untracked();
     if text.trim().is_empty() {
         return;

@@ -19,6 +19,7 @@ fn native(registry: &mut Registry) {
 /// App 根：主题底色上的一屏聊天。
 #[component]
 pub fn App() -> impl IntoElement {
+    eprintln!("[app] App render");
     bridge::start();
     view()
         .flex_1()

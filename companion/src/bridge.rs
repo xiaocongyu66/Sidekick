@@ -21,15 +21,19 @@ pub(crate) fn start() {
         return;
     }
     global::<store::BridgeStarted>();
+    eprintln!("[bridge] start");
     let (commands_tx, commands_rx) = mpsc::unbounded_channel::<store::ChatCommand>();
     let (events_tx, mut events_rx) = mpsc::unbounded_channel::<store::BridgeEvent>();
     store::set_agent_channel(commands_tx);
 
     // 引擎线程：后台事件 → 信号。
     spawn(async move {
+        eprintln!("[bridge] engine event loop ready");
         while let Some(event) = events_rx.recv().await {
+            eprintln!("[bridge] event → store: {event:?}");
             store::apply(event);
         }
+        eprintln!("[bridge] engine event loop ended");
     });
 
     // 专用线程 + 独立 tokio runtime：harn agent loop（nsh 引擎线程无 tokio 上下文）。
@@ -42,11 +46,14 @@ pub(crate) fn start() {
                 .build()
                 .expect("harn tokio runtime");
             runtime.block_on(async move {
+                eprintln!("[harn] thread up");
                 if let Err(error) = run_agent(commands_rx, events_tx.clone()).await {
+                    eprintln!("[harn] run_agent error: {error}");
                     let _ = events_tx.send(store::BridgeEvent::Error(
                         format!("后台启动失败：{error}").into(),
                     ));
                 }
+                eprintln!("[harn] run_agent returned");
             });
         })
         .expect("harn agent thread");
@@ -63,12 +70,14 @@ async fn run_agent(
         ..Default::default()
     })?;
     let model = config.model.clone();
+    eprintln!("[harn] config resolved, building runtime");
     let Runtime {
         agent,
         abort,
         mut events_rx,
         ..
     } = build_runtime(config).await?;
+    eprintln!("[harn] runtime built");
 
     let _ = events.send(store::BridgeEvent::Started { model: model.into() });
 
@@ -77,9 +86,11 @@ async fn run_agent(
         tokio::select! {
             maybe_command = commands.recv() => {
                 let Some(store::ChatCommand::Send(text)) = maybe_command else { break };
+                eprintln!("[harn] command: send");
                 abort.reset();
                 match agent.send(UserInput::text(String::from(text.as_str()))).await {
-                    Ok(_) => {
+                    Ok(outcome) => {
+                        eprintln!("[harn] send ok: {:?}", outcome.termination);
                         let _ = events.send(store::BridgeEvent::Done);
                     }
                     Err(error) => {
@@ -91,6 +102,7 @@ async fn run_agent(
             }
             maybe_event = events_rx.recv() => {
                 let Some(event) = maybe_event else { break };
+                eprintln!("[harn] agent event: {event:?}");
                 if let Some(mapped) = map_event(&event) {
                     let _ = events.send(mapped);
                 }

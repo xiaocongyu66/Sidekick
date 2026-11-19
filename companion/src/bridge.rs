@@ -16,11 +16,16 @@ use crate::prompt::COMPANION_SYSTEM;
 use crate::store;
 
 /// 启动桥接：App 首次渲染时在引擎线程调用。重复调用是幂等的。
+///
+/// 注意：`try_global::<T>()` 只判断「是否在引擎线程」（内部直接调
+/// `global()` 创建），不能用作存在性检查，幂等用原子标记。
+static STARTED: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
 pub(crate) fn start() {
-    if try_global::<store::BridgeStarted>().is_some() {
+    if STARTED.swap(true, std::sync::atomic::Ordering::SeqCst) {
         return;
     }
-    global::<store::BridgeStarted>();
     eprintln!("[bridge] start");
     let (commands_tx, commands_rx) = mpsc::unbounded_channel::<store::ChatCommand>();
     let (events_tx, mut events_rx) = mpsc::unbounded_channel::<store::BridgeEvent>();

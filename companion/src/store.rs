@@ -28,10 +28,6 @@ pub(crate) enum ChatCommand {
     Send(SharedString),
 }
 
-/// 桥接是否已启动（全局存在性标记）。
-#[derive(Default)]
-pub(crate) struct BridgeStarted;
-
 /// 后台 → UI 的事件。
 #[derive(Clone, PartialEq)]
 pub(crate) enum BridgeEvent {

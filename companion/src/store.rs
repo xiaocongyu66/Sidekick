@@ -5,8 +5,8 @@
 //! `to_agent` 是跨线程通道，把命令送到 harn 的 tokio 任务，
 //! 事件经 `apply` 回到引擎线程写信号。
 
+use nsh_core::element::SharedString;
 use nsh_core::prelude::*;
-use nsh_core::SharedString;
 
 /// 一条消息的角色。
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -29,6 +29,7 @@ pub(crate) enum ChatCommand {
 }
 
 /// 桥接是否已启动（全局存在性标记）。
+#[derive(Default)]
 pub(crate) struct BridgeStarted;
 
 /// 后台 → UI 的事件。
@@ -48,6 +49,7 @@ pub(crate) enum BridgeEvent {
     Done,
 }
 
+#[derive(Clone)]
 struct ChatState {
     messages: Signal<Vec<Message>>,
     draft: Signal<SharedString>,
@@ -62,7 +64,7 @@ impl Default for ChatState {
                 role: Role::Assistant,
                 text: "我在呢。今天想聊点什么？".into(),
             }]),
-            draft: signal(SharedString::new()),
+            draft: signal(SharedString::default()),
             busy: signal(false),
             to_agent: None,
         }
@@ -87,7 +89,7 @@ fn busy() -> Signal<bool> {
 
 /// 注入后台通道（bridge 在引擎线程建好后调用）。
 pub(crate) fn set_agent_channel(sender: tokio::sync::mpsc::UnboundedSender<ChatCommand>) {
-    state().with_untracked(|state| {
+    state().update(|state| {
         state.to_agent = Some(sender);
     });
 }
@@ -128,14 +130,14 @@ pub(crate) fn submit() {
     if text.trim().is_empty() {
         return;
     }
-    draft().set(SharedString::new());
+    draft().set(SharedString::default());
     messages().update(|messages| messages.push(Message {
         role: Role::User,
         text: text.clone(),
     }));
     busy().set(true);
     state().with_untracked(|state| {
-        if let Some(sender) = state.to_agent.as_ref() {
+        if let Some(sender) = state.to_agent.clone().as_ref() {
             let _ = sender.send(ChatCommand::Send(text));
         }
     });

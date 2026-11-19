@@ -9,6 +9,7 @@ nsh-core = { path = "../nsh-src/crates/nsh-core" }
 nsh-base = { path = "../nsh-src/crates/nsh-base" }
 harn-cli = { path = "../harn/crates/harn-cli" }
 harn-agent = { path = "../harn/crates/harn-agent" }
+harn-config = { path = "../harn/crates/harn-config" }
 harn-core = { path = "../harn/crates/harn-core" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
 anyhow = "1"

@@ -5,8 +5,8 @@ mod prompt;
 mod store;
 
 use nsh_base::{button, input, theme};
+use nsh_core::element::{Position, SharedString};
 use nsh_core::prelude::*;
-use nsh_core::{element::Position, SharedString};
 
 use store::Role;
 
@@ -73,48 +73,31 @@ fn composer() -> impl IntoElement {
         )
 }
 
-/// 一条消息气泡：助手靠左、用户靠右，配色随角色。
+/// 一条消息气泡：配色随角色（v1 左对齐，后续再做左右分边）。
 fn message_row(at: Position) -> impl IntoElement {
     let message = computed(move || store::message_at(at.index()));
-    view()
-        .flex_row()
-        .w_full()
-        // 用户消息把气泡推到右边。
-        .child(move || {
-            message
-                .get()
-                .filter(|message| message.role == Role::User)
-                .map(|_| view().flex_1())
-        })
-        .child(
-            view()
-                .px_3()
-                .py_2()
-                .rounded(px(16.0))
-                .bg(move || {
+    view().flex_row().child(
+        view()
+            .px_3()
+            .py_2()
+            .rounded(px(16.0))
+            .bg(move || {
+                let user = message.get().is_some_and(|m| m.role == Role::User);
+                let tokens = theme();
+                if user { tokens.primary } else { tokens.muted }
+            })
+            .child(
+                text(move || {
+                    message
+                        .get()
+                        .map(|message| message.text)
+                        .unwrap_or_default()
+                })
+                .text_color(move || {
                     let user = message.get().is_some_and(|m| m.role == Role::User);
                     let tokens = theme();
-                    if user { tokens.primary } else { tokens.muted }
-                })
-                .child(
-                    text(move || {
-                        message
-                            .get()
-                            .map(|message| message.text)
-                            .unwrap_or_default()
-                    })
-                    .text_color(move || {
-                        let user = message.get().is_some_and(|m| m.role == Role::User);
-                        let tokens = theme();
-                        if user { tokens.primary_foreground } else { tokens.foreground }
-                    }),
-                ),
-        )
-        // 助手消息右侧留白保持平衡。
-        .child(move || {
-            message
-                .get()
-                .filter(|message| message.role != Role::User)
-                .map(|_| view().flex_1())
-        })
+                    if user { tokens.primary_foreground } else { tokens.foreground }
+                }),
+            ),
+    )
 }

@@ -35,3 +35,47 @@ jobs:
         run: cargo clippy --manifest-path companion/Cargo.toml --all-targets -- -D warnings
       - name: companion test
         run: cargo test --manifest-path companion/Cargo.toml
+
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/android-sdk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android SDK（platforms;android-35、build-tools、NDK r27c）
+        run: |
+          mkdir -p $ANDROID_HOME/cmdline-tools/latest
+          curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o /tmp/clt.zip
+          unzip -q /tmp/clt.zip -d /tmp/clt
+          mv /tmp/clt/cmdline-tools/* $ANDROID_HOME/cmdline-tools/latest/
+          rm -rf /tmp/clt /tmp/clt.zip
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-35" "build-tools;35.0.1" "ndk;27.0.12077973"
+      - name: nsh CLI + android 组件
+        run: |
+          curl -sL https://github.com/longbridge/nsh/releases/latest/download/nsh-linux-x86_64.tar.gz | tar xz -C /tmp
+          /tmp/nsh/bin/nsh --version
+          /tmp/nsh/bin/nsh component add android
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.100"
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "harn -> target\ncompanion -> target"
+          key: android
+      - name: bootstrap（拉取 nsh 源码）
+        run: ./bootstrap.sh
+      - name: 打包 APK（arm64-v8a）
+        working-directory: companion
+        run: /tmp/nsh/bin/nsh package --target android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: companion-android-apk
+          path: companion/.nsh/out/*.apk
+          if-no-files-found: error

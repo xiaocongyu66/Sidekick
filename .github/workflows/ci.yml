@@ -42,6 +42,8 @@ jobs:
       ANDROID_HOME: /home/runner/android-sdk
     steps:
       - uses: actions/checkout@v4
+      - name: 系统（host runner 构建需要 glib/gtk 开发头）
+        run: sudo apt-get update && sudo apt-get install -y libgtk-4-dev libglib2.0-dev libwebkitgtk-6.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev clang
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
